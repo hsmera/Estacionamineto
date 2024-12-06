@@ -5,7 +5,8 @@
 
 using namespace std;
 
-class Auto {
+class Auto
+{
 private:
     string placa;
     string marca;
@@ -16,7 +17,13 @@ public:
     Auto();
 
     // Constructor parametrizado
-    Auto(const string& placa, const string& marca, const string& color);
+    Auto(const string &placa, const string &marca, const string &color);
+
+    // Sobrecargar el operador == para comparar Autos por placa
+    bool operator==(const string &otherPlaca) const
+    {
+        return placa == otherPlaca;
+    }
 
     // Métodos getters
     string getPlaca() const;
@@ -24,9 +31,9 @@ public:
     string getColor() const;
 
     // Métodos setters
-    void setPlaca(const string& placa);
-    void setMarca(const string& marca);
-    void setColor(const string& color);
+    void setPlaca(const string &placa);
+    void setMarca(const string &marca);
+    void setColor(const string &color);
 
     // Destructor
     ~Auto();

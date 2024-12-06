@@ -6,6 +6,8 @@
 #include "Propietario.h"
 #include <algorithm>
 #include "Validaciones.h"
+#include "RegistroHistorial.h"
+#include <limits>
 
 using namespace std;
 int elegirEspacio()
@@ -43,11 +45,22 @@ void registrarAutoYPropietario(Auto *&nuevoAuto, Propietario *&nuevoPropietario)
     esDiscapacitado = ingresar_entero.ingresar("Tiene alguna discapacidad? (1: Si, 0: No): ", "entero");
     nuevoPropietario = new Propietario(nombre, cedula, correo, esDiscapacitado);
 }
+
+void pausar() {
+    cout << "Presione Enter para continuar...";
+    cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');  // Limpia el buffer
+    cin.get();  // Espera a Enter
+}
+
+
 int main()
 {
     const std::string rutaPropietarios = "propietarios.txt";
     const std::string rutaAutosPermitidos = "autos.txt";
+    const std::string rutaHistorial = "historial.txt";
+
     Menu menu;
+    RegistroHistorial historial(rutaHistorial);
 
     Parqueadero parqueadero(20, rutaPropietarios, rutaAutosPermitidos);
     parqueadero.cargarPropietarios(rutaPropietarios);
@@ -64,11 +77,12 @@ int main()
             "   Mostrar lista de propietarios ",
             "  Guardar lista de propietarios  ",
             "     Eliminar propietario        ",
+            "      Mostrar Historial          ",
             "           Salir                 "};
 
         int opcion = menu.mostrarMenu("===== MENU PRINCIPAL =====", opciones);
         system("cls");
-        switch (opcion+1)
+        switch (opcion + 1)
         {
         case 0:
         { // Registrar un auto permitido y su propietario
@@ -87,6 +101,7 @@ int main()
             cout << "Registro completo.\n";
             delete nuevoAuto;
             delete nuevoPropietario;
+            pausar();
             break;
         }
         case 1:
@@ -112,12 +127,14 @@ int main()
             cout << "Registro completo.\n";
             delete nuevoAuto;
             delete nuevoPropietario;
+            pausar();
             break;
         }
         case 2:
         { // Retirar un auto
             int espacioID = elegirEspacio();
             parqueadero.retirarAuto(espacioID);
+            pausar();
             break;
         }
         case 3:
@@ -128,6 +145,7 @@ int main()
 
             int espacioID = elegirEspacio();
             parqueadero.estacionarAuto(new Auto(placa, "Desconocido", "Desconocido"), nullptr, espacioID);
+            pausar();
             break;
         }
         case 4:
@@ -136,12 +154,14 @@ int main()
             cout << "\nIngrese la placa del auto a eliminar: ";
             cin >> placa;
             parqueadero.eliminarAutoPermitido(placa);
+            pausar();
             break;
         }
         case 5:
         { // Mostrar estado del parqueadero
             cout << "\n===== ESTADO DEL PARQUEADERO =====\n";
             parqueadero.mostrarEstado();
+            pausar();
             break;
         }
         case 6:
@@ -160,12 +180,14 @@ int main()
                          << ", Color: " << autoPermitido.getColor() << '\n';
                 }
             }
+            pausar();
             break;
         }
         case 7:
         { // Guardar lista de autos permitidos a archivo
             parqueadero.guardarAutosPermitidos(rutaAutosPermitidos);
-            cout << "Lista de autos permitidos guardada.\n";
+            cout << "\nLista de autos permitidos guardada.\n";
+            pausar();
             break;
         }
         case 8:
@@ -180,9 +202,9 @@ int main()
                 for (const auto &propietario : parqueadero.getPropietarios())
                 {
                     cout << "Nombre: " << propietario.getNombreCompleto()
-                         << ", Cédula: " << propietario.getCedula()
+                         << ", Cedula: " << propietario.getCedula()
                          << ", Correo: " << propietario.getCorreo()
-                         << ", Es discapacitado: " << (propietario.getEsDiscapacitado() ? "Sí" : "No") << '\n';
+                         << ", Es discapacitado: " << (propietario.getEsDiscapacitado() ? "Si" : "No") << '\n';
 
                     for (const auto &autoAsociado : propietario.getAutos())
                     {
@@ -192,12 +214,14 @@ int main()
                     }
                 }
             }
+            pausar();
             break;
         }
         case 9:
         {
             parqueadero.guardarPropietarios(rutaPropietarios);
-            cout << "Lista de propietarios guardada.\n";
+            cout << "\nLista de propietarios guardada.\n";
+            pausar();
             break;
         }
         case 10: // Eliminar propietario
@@ -207,17 +231,22 @@ int main()
             cin >> cedula;
 
             parqueadero.eliminarPropietario(cedula);
+            pausar();
             break;
         }
         case 11:
+        {
+            historial.mostrarHistorial();
+            pausar();
+            break;
+        }
+        case 12:
             cout << "\nSaliendo del programa...\n";
             return 0;
         default:
             cout << "\nOpción inválida.\n";
             break;
         }
-        cout << "Presione Enter para continuar...";
-        cin.get();
     }
 
     return 0;

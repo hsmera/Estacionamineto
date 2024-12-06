@@ -24,6 +24,7 @@ public:
     bool estaOcupado() const { return ocupado; }
 
     const Auto* getAuto() const; // Nuevo método para obtener un puntero al Auto
+
 };
 
 #endif // ESPACIO_PARQUEADERO_H

@@ -29,5 +29,9 @@ std::string EspacioParqueadero::obtenerEstado() const {
 }
 
 const Auto* EspacioParqueadero::getAuto() const {
-    return autoEstacionado.get(); // Retorna un puntero al auto estacionado
+    if (!autoEstacionado) {
+        return nullptr;
+    }
+    return autoEstacionado.get();
 }
+

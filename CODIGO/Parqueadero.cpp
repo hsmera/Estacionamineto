@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <sstream>  // Asegúrate de incluir esta cabecera
 #include <limits>
+#include "RegistroHistorial.h"
 
 using namespace std;
 
@@ -20,50 +21,58 @@ Parqueadero::Parqueadero(int totalEspacios, const std::string &rutaPropietarios,
 }
 
 // Método para estacionar un auto
-void Parqueadero::estacionarAuto(Auto *autoEstacionado, Propietario *propietario, int espacioID)
-{
-    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size()))
-    {
-        cerr << "Espacio invalido.\n";
+void Parqueadero::estacionarAuto(Auto *autoEstacionado, Propietario *propietario, int espacioID) {
+    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size())) {
+        cerr << "\nEspacio invalido.\n";
         return;
     }
 
     auto &espacio = espacios[espacioID - 1];
-    if (espacio->estaOcupado())
-    {
-        cerr << "El espacio ya está ocupado.\n";
+    if (espacio->estaOcupado()) {
+        cerr << "\nEl espacio ya está ocupado.\n";
         return;
     }
 
-    if (find(autosPermitidos.begin(), autosPermitidos.end(), autoEstacionado->getPlaca()) == autosPermitidos.end())
-    {
-        cerr << "Auto no permitido.\n";
+    if (find(autosPermitidos.begin(), autosPermitidos.end(), autoEstacionado->getPlaca()) == autosPermitidos.end()) {
+        cerr << "\nAuto no permitido.\n";
         return;
     }
 
     espacio->ocuparEspacio(autoEstacionado, propietario);
-    cout << "Auto estacionado en espacio " << espacioID << ".\n";
+    cout << "\nAuto estacionado en espacio " << espacioID << ".\n";
+
+    // Registrar el evento de entrada
+    RegistroHistorial historial("historial.txt");
+    historial.registrarEvento(autoEstacionado->getPlaca(), "Entrada");
 }
 
 // Método para retirar un auto
-void Parqueadero::retirarAuto(int espacioID)
-{
-    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size()))
-    {
-        cerr << "Espacio invalido.\n";
+void Parqueadero::retirarAuto(int espacioID) {
+    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size())) {
+        cerr << "\nEspacio inválido.\n";
         return;
     }
 
     auto &espacio = espacios[espacioID - 1];
-    if (!espacio->estaOcupado())
-    {
-        cerr << "El espacio ya esta vacio.\n";
+    if (!espacio->estaOcupado()) {
+        cerr << "\nEl espacio ya está vacío.\n";
         return;
     }
 
+    // Obtener el auto antes de liberar el espacio
+    const Auto* autoRetirado = espacio->getAuto(); // Acceso seguro a autoEstacionado
+
+    // Registrar el evento de salida
+    RegistroHistorial historial("historial.txt");
+    if (autoRetirado) {
+        historial.registrarEvento(autoRetirado->getPlaca(), "Salida");
+    }
+
+    // Liberar el espacio después de registrar el evento
     espacio->liberarEspacio();
-    cout << "Auto retirado del espacio " << espacioID << ".\n";
+    cout << "\nAuto retirado del espacio " << espacioID << ".\n";
 }
+
 
 // Mostrar el estado de los espacios del parqueadero
 void Parqueadero::mostrarEstado() const
@@ -84,11 +93,11 @@ void Parqueadero::registrarAutoPermitido(const Auto &autoPermitido)
     if (it == autosPermitidos.end())
     {
         autosPermitidos.push_back(autoPermitido);
-        cout << "Auto con placa " << autoPermitido.getPlaca() << " registrado.\n";
+        cout << "\nAuto con placa " << autoPermitido.getPlaca() << " registrado.\n";
     }
     else
     {
-        cerr << "El auto con placa " << autoPermitido.getPlaca() << " ya esta registrado.\n";
+        cerr << "\nEl auto con placa " << autoPermitido.getPlaca() << " ya esta registrado.\n";
     }
 }
 
@@ -102,11 +111,11 @@ void Parqueadero::eliminarAutoPermitido(const std::string &placa)
     if (it != autosPermitidos.end())
     {
         autosPermitidos.erase(it);
-        cout << "Auto con placa " << placa << " eliminado correctamente.\n";
+        cout << "\nAuto con placa " << placa << " eliminado correctamente.\n";
     }
     else
     {
-        cerr << "El auto con placa " << placa << " no esta en la lista de permitidos.\n";
+        cerr << "\nEl auto con placa " << placa << " no esta en la lista de permitidos.\n";
     }
 }
 
@@ -118,7 +127,7 @@ void Parqueadero::guardarAutosPermitidos(const std::string &rutaArchivo)
     {
         std::ofstream archivo(rutaArchivo);
         if (!archivo)
-            throw std::runtime_error("No se pudo abrir el archivo para escritura.");
+            throw std::runtime_error("\nNo se pudo abrir el archivo para escritura.");
 
         for (const auto &autoPermitido : autosPermitidos)
         {
@@ -127,11 +136,11 @@ void Parqueadero::guardarAutosPermitidos(const std::string &rutaArchivo)
                     << autoPermitido.getColor() << '\n';
         }
 
-        cout << "Autos permitidos guardados correctamente en " << rutaArchivo << ".\n";
+        cout << "\nAutos permitidos guardados correctamente en " << rutaArchivo << ".\n";
     }
     catch (const std::exception &e)
     {
-        cerr << "Error al guardar autos permitidos: " << e.what() << '\n';
+        cerr << "\nError al guardar autos permitidos: " << e.what() << '\n';
     }
 }
 
@@ -140,7 +149,7 @@ void Parqueadero::guardarPropietarios(const std::string& rutaArchivo) {
     std::ofstream archivo(rutaArchivo);
 
     if (!archivo.is_open()) {
-        std::cerr << "No se pudo abrir el archivo para guardar propietarios: " << rutaArchivo << std::endl;
+        std::cerr << "\nNo se pudo abrir el archivo para guardar propietarios: " << rutaArchivo << std::endl;
         return;
     }
 
@@ -160,7 +169,7 @@ void Parqueadero::guardarPropietarios(const std::string& rutaArchivo) {
     }
 
     archivo.close();
-    std::cout << "Propietarios guardados correctamente en " << rutaArchivo << "." << std::endl;
+    std::cout << "\nPropietarios guardados correctamente en " << rutaArchivo << "." << std::endl;
 }
 
 
@@ -189,7 +198,7 @@ void Parqueadero::eliminarPropietario(const std::string &cedula)
 
         // Eliminar el propietario de la lista
         propietarios.erase(it);
-        cout << "Propietario con cedula " << cedula << " eliminado correctamente.\n";
+        cout << "\nPropietario con cedula " << cedula << " eliminado correctamente.\n";
 
         // Guardar los cambios en los archivos
         guardarPropietarios("propietarios.txt");
@@ -197,7 +206,7 @@ void Parqueadero::eliminarPropietario(const std::string &cedula)
     }
     else
     {
-        cerr << "No se encontro un propietario con la cedula " << cedula << ".\n";
+        cerr << "\nNo se encontro un propietario con la cedula " << cedula << ".\n";
     }
 }
 
@@ -210,7 +219,7 @@ void Parqueadero::cargarAutosPermitidos(const std::string &rutaArchivo)
     {
         std::ifstream archivo(rutaArchivo);
         if (!archivo)
-            throw std::runtime_error("No se pudo abrir el archivo de autos permitidos.");
+            throw std::runtime_error("\nNo se pudo abrir el archivo de autos permitidos.");
 
         std::string placa, marca, color;
         while (archivo >> placa >> marca >> color)
@@ -218,11 +227,11 @@ void Parqueadero::cargarAutosPermitidos(const std::string &rutaArchivo)
             autosPermitidos.emplace_back(placa, marca, color);
         }
 
-        cout << "Autos permitidos cargados correctamente desde " << rutaArchivo << ".\n";
+        cout << "\nAutos permitidos cargados correctamente desde " << rutaArchivo << ".\n";
     }
     catch (const std::exception &e)
     {
-        cerr << "Error al cargar autos permitidos: " << e.what() << '\n';
+        cerr << "\nError al cargar autos permitidos: " << e.what() << '\n';
     }
 }
 
@@ -232,7 +241,7 @@ void Parqueadero::cargarPropietarios(const std::string& rutaArchivo) {
     std::ifstream archivo(rutaArchivo);
 
     if (!archivo.is_open()) {
-        std::cerr << "No se pudo abrir el archivo de propietarios: " << rutaArchivo << std::endl;
+        std::cerr << "\nNo se pudo abrir el archivo de propietarios: " << rutaArchivo << std::endl;
         return;
     }
 
@@ -281,7 +290,7 @@ void Parqueadero::cargarPropietarios(const std::string& rutaArchivo) {
     }
 
     archivo.close();
-    std::cout << "Propietarios cargados correctamente desde " << rutaArchivo << "." << std::endl;
+    std::cout << "\nPropietarios cargados correctamente desde " << rutaArchivo << "." << std::endl;
 }
 
 
@@ -298,4 +307,4 @@ void Parqueadero::agregarPropietario(const Propietario &nuevoPropietario) {
     propietarios.push_back(nuevoPropietario);
 }
 
-// g++ main.cpp EspacioParqueadero.cpp Parqueadero.cpp Propietario.cpp Auto.cpp Menu.cpp -o main.exe
+// g++ main.cpp EspacioParqueadero.cpp Parqueadero.cpp Propietario.cpp Auto.cpp Menu.cpp RegistroHistorial.cpp -o main.exe

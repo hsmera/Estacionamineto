@@ -20,6 +20,19 @@ Parqueadero::Parqueadero(int totalEspacios, const std::string &rutaPropietarios,
     cargarAutosPermitidos(rutaAutosPermitidos);
 }
 
+struct EspacioEstacionamiento {
+    string id;          // Identificador del espacio (e.g., "01")
+    bool ocupado;       // Estado de ocupación (true = ocupado)
+    bool esDiscapacitado; // Si es un espacio reservado para discapacitados
+};
+
+vector<EspacioEstacionamiento> estacionamiento = {
+        {"01", false, true}, {"02", false, true}, {"03", false, false},
+        {"04", false, false}, {"05", false, false}, {"06", false, false},
+        {"07", false, false}, {"08", false, false}, {"09", false, false},
+        {"10", false, false}, {"11", false, false}, {"12", false, false}
+    };
+
 // Método para estacionar un auto
 void Parqueadero::estacionarAuto(Auto *autoEstacionado, Propietario *propietario, int espacioID) {
     if (espacioID < 1 || espacioID > static_cast<int>(espacios.size())) {

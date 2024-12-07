@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+using namespace std; 
+
 class Menu {
 public:
     /**
@@ -13,7 +15,7 @@ public:
      * @param opciones 
      * @return 
      */
-    int mostrarMenu(const std::string& titulo, const std::vector<std::string>& opciones);
+    int mostrarMenu(const string& titulo, const vector<string>& opciones);
 };
 
 #endif 

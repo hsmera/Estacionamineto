@@ -6,7 +6,8 @@
 #include "Auto.h"
 #include "Propietario.h"
 
-class EspacioParqueadero {
+class EspacioParqueadero
+{
 private:
     int id;
     bool ocupado;
@@ -17,14 +18,15 @@ public:
     explicit EspacioParqueadero(int id);
     ~EspacioParqueadero();
 
-    void ocuparEspacio(Auto* autoEstacionado, Propietario* propietario);
+    void ocuparEspacio(Auto *autoEstacionado, Propietario *propietario);
     void liberarEspacio();
     std::string obtenerEstado() const;
 
     bool estaOcupado() const { return ocupado; }
 
-    const Auto* getAuto() const; // Nuevo método para obtener un puntero al Auto
-
+    const Auto *getAuto() const; // Nuevo método para obtener un puntero al Auto
+    int getId() const;
+    const Propietario *getPropietario() const;
 };
 
 #endif // ESPACIO_PARQUEADERO_H

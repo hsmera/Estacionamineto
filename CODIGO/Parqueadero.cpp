@@ -2,9 +2,11 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <sstream>  // Asegúrate de incluir esta cabecera
+#include <sstream> // Asegúrate de incluir esta cabecera
 #include <limits>
 #include "RegistroHistorial.h"
+#include <random>
+#include <iomanip> // Para formato
 
 using namespace std;
 
@@ -18,74 +20,275 @@ Parqueadero::Parqueadero(int totalEspacios, const std::string &rutaPropietarios,
 
     cargarPropietarios(rutaPropietarios);
     cargarAutosPermitidos(rutaAutosPermitidos);
+    std::cout << "Los espacios 1 a 4 están reservados para personas con discapacidad.\n";
 }
 
-struct EspacioEstacionamiento {
-    string id;          // Identificador del espacio (e.g., "01")
-    bool ocupado;       // Estado de ocupación (true = ocupado)
-    bool esDiscapacitado; // Si es un espacio reservado para discapacitados
-};
+void Parqueadero::mostrarEstadoCircular() const
+{
+    const std::string verde = "\033[32m"; // Vacío
+    const std::string rojo = "\033[31m";  // Ocupado
+    const std::string azul = "\033[34m";  // Reservado para discapacitados
+    const std::string reset = "\033[0m";  // Restaurar color
 
-vector<EspacioEstacionamiento> estacionamiento = {
-        {"01", false, true}, {"02", false, true}, {"03", false, false},
-        {"04", false, false}, {"05", false, false}, {"06", false, false},
-        {"07", false, false}, {"08", false, false}, {"09", false, false},
-        {"10", false, false}, {"11", false, false}, {"12", false, false}
-    };
+    int totalEspacios = espacios.size();
+    int espaciosPorFila = 10; // Espacios por fila superior/inferior
+
+    // Fila superior
+    std::cout << " ";
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        if (i < 4)
+        { // Primeros cuatro para discapacitados
+            std::cout << azul;
+        }
+        else if (espacios[i]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "+---+ ";
+    }
+    std::cout << reset << "\n ";
+
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        if (i < 4)
+        {
+            std::cout << azul;
+        }
+        else if (espacios[i]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "| " << std::setw(2) << espacios[i]->getId() << "| ";
+    }
+    std::cout << reset << "\n ";
+
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        if (i < 4)
+        {
+            std::cout << azul;
+        }
+        else if (espacios[i]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "+---+ ";
+    }
+    std::cout << reset << "\n";
+
+    // Espacios laterales
+    int espaciosRestantes = totalEspacios - (2 * espaciosPorFila);
+    int espaciosLaterales = espaciosRestantes / 2;
+
+    for (int i = 0; i < espaciosLaterales; ++i)
+    {
+        if (espacios[espaciosPorFila + i]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "| " << std::setw(2) << espacios[espaciosPorFila + i]->getId() << "| ";
+        std::cout << reset;
+
+        std::cout << "                                     "; // Espaciado central
+
+        if (espacios[espaciosPorFila + espaciosLaterales + i]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "| " << std::setw(2) << espacios[espaciosPorFila + espaciosLaterales + i]->getId() << "|\n";
+        std::cout << reset;
+    }
+
+    // Fila inferior
+    std::cout << " ";
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        int idx = totalEspacios - espaciosPorFila + i;
+        if (espacios[idx]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "+---+ ";
+    }
+    std::cout << reset << "\n ";
+
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        int idx = totalEspacios - espaciosPorFila + i;
+        if (espacios[idx]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "| " << std::setw(2) << espacios[idx]->getId() << "| ";
+    }
+    std::cout << reset << "\n ";
+
+    for (int i = 0; i < espaciosPorFila; ++i)
+    {
+        int idx = totalEspacios - espaciosPorFila + i;
+        if (espacios[idx]->estaOcupado())
+        {
+            std::cout << rojo;
+        }
+        else
+        {
+            std::cout << verde;
+        }
+        std::cout << "+---+ ";
+    }
+    std::cout << reset << "\n";
+}
 
 // Método para estacionar un auto
-void Parqueadero::estacionarAuto(Auto *autoEstacionado, Propietario *propietario, int espacioID) {
-    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size())) {
-        cerr << "\nEspacio invalido.\n";
+void Parqueadero::estacionarAuto(Auto *autoEstacionado, Propietario *propietario, const std::string &tarjeta, int espacioID)
+{
+
+    // Verificar si el auto tiene estado "Dentro del parqueadero"
+    auto it = std::find_if(autosPermitidos.begin(), autosPermitidos.end(),
+                           [&autoEstacionado](const Auto &a)
+                           { return a.getPlaca() == autoEstacionado->getPlaca(); });
+
+    if (it == autosPermitidos.end())
+    {
+        cerr << "\nEl auto no está permitido para estacionarse.\n";
+        return;
+    }
+
+    std::string estadoActual = it->getEstado();
+    estadoActual.erase(remove_if(estadoActual.begin(), estadoActual.end(), [](unsigned char c)
+                                 { return std::isspace(c); }),
+                       estadoActual.end());
+
+    if (estadoActual != "Dentrodelparqueadero")
+    {
+        cerr << "\nEl auto no tiene acceso para estacionarse. Primero debe ingresar al parqueadero.\n";
+        return;
+    }
+
+    // Verificar si el espacio es válido
+    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size()))
+    {
+        std::cerr << "Espacio invalido.\n";
         return;
     }
 
     auto &espacio = espacios[espacioID - 1];
-    if (espacio->estaOcupado()) {
-        cerr << "\nEl espacio ya está ocupado.\n";
+
+    // Verificar si el espacio está reservado para discapacitados
+    if (espacioID <= 4)
+    { // Asumiendo que los primeros 4 espacios son reservados
+        if (!propietario || !propietario->getEsDiscapacitado())
+        {
+            std::cerr << "El espacio " << espacioID << " está reservado para personas con discapacidad.\n";
+            return;
+        }
+    }
+
+    // Verificar si el espacio está ocupado
+    if (espacio->estaOcupado())
+    {
+        std::cerr << "El espacio " << espacioID << " ya esta ocupado.\n";
         return;
     }
 
-    if (find(autosPermitidos.begin(), autosPermitidos.end(), autoEstacionado->getPlaca()) == autosPermitidos.end()) {
-        cerr << "\nAuto no permitido.\n";
+    // Verificar si la tarjeta es válida
+    auto tarjetaIt = tarjetasParqueo.find(autoEstacionado->getPlaca());
+    if (tarjetaIt == tarjetasParqueo.end() || tarjetaIt->second != tarjeta)
+    {
+        std::cerr << "Numero de tarjeta invalido para el auto con placa " << autoEstacionado->getPlaca() << ".\n";
         return;
     }
 
+    // Estacionar el auto
     espacio->ocuparEspacio(autoEstacionado, propietario);
-    cout << "\nAuto estacionado en espacio " << espacioID << ".\n";
+    actualizarEstadoAuto(autoEstacionado->getPlaca(), "Estacionado");
+    std::cout << "Auto estacionado en espacio " << espacioID << ".\n";
 
-    // Registrar el evento de entrada
+    // Registrar el evento
     RegistroHistorial historial("historial.txt");
     historial.registrarEvento(autoEstacionado->getPlaca(), "Entrada");
 }
 
 // Método para retirar un auto
-void Parqueadero::retirarAuto(int espacioID) {
-    if (espacioID < 1 || espacioID > static_cast<int>(espacios.size())) {
-        cerr << "\nEspacio inválido.\n";
-        return;
+void Parqueadero::retirarAuto(const std::string &placa)
+{
+    // Buscar el auto en la lista de autos permitidos (cargada desde autos.txt)
+    auto it = std::find_if(autosPermitidos.begin(), autosPermitidos.end(),
+                           [&placa](const Auto &a)
+                           { return a.getPlaca() == placa; });
+
+    if (it != autosPermitidos.end())
+    {
+        std::string estado = it->getEstado();
+
+        // Asegurarse de que el estado esté limpio (sin espacios)
+        std::transform(estado.begin(), estado.end(), estado.begin(), ::tolower);             // Convertir a minúsculas
+        estado.erase(std::remove_if(estado.begin(), estado.end(), ::isspace), estado.end()); // Eliminar espacios
+
+        // Verificar que el auto esté estacionado
+        if (estado == "estacionado")
+        {
+            RegistroHistorial historial("historial.txt");
+            historial.registrarEvento(placa, "Salida");
+
+            // Actualizar el estado del auto en autos.txt
+            actualizarEstadoAuto(placa, "No se encuentra en el parqueadero");
+
+            // Liberar el espacio
+            for (auto &espacio : espacios)
+            {
+                if (espacio->estaOcupado() && espacio->getAuto()->getPlaca() == placa)
+                {
+                    espacio->liberarEspacio();
+                    break;
+                }
+            }
+
+            // Guardar los cambios en autos.txt y propietarios.txt
+            guardarAutosPermitidos("autos.txt");
+            guardarPropietarios("propietarios.txt");
+
+            std::cout << "\nAuto con placa " << placa << " retirado del parqueadero.\n";
+        }
+        else
+        {
+            std::cerr << "\nEl auto con placa " << placa << " no esta estacionado.\n";
+        }
     }
-
-    auto &espacio = espacios[espacioID - 1];
-    if (!espacio->estaOcupado()) {
-        cerr << "\nEl espacio ya está vacío.\n";
-        return;
+    else
+    {
+        std::cerr << "\nNo se encontro un auto con la placa " << placa << " en el parqueadero.\n";
     }
-
-    // Obtener el auto antes de liberar el espacio
-    const Auto* autoRetirado = espacio->getAuto(); // Acceso seguro a autoEstacionado
-
-    // Registrar el evento de salida
-    RegistroHistorial historial("historial.txt");
-    if (autoRetirado) {
-        historial.registrarEvento(autoRetirado->getPlaca(), "Salida");
-    }
-
-    // Liberar el espacio después de registrar el evento
-    espacio->liberarEspacio();
-    cout << "\nAuto retirado del espacio " << espacioID << ".\n";
 }
-
 
 // Mostrar el estado de los espacios del parqueadero
 void Parqueadero::mostrarEstado() const
@@ -96,30 +299,41 @@ void Parqueadero::mostrarEstado() const
     }
 }
 
+std::string Parqueadero::generarTarjetaParqueo()
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(100000, 999999);
+    return std::to_string(dis(gen));
+}
+
 // Registrar un auto permitido
 void Parqueadero::registrarAutoPermitido(const Auto &autoPermitido)
 {
-    // Verificar si el auto ya está registrado por su placa
     auto it = std::find_if(autosPermitidos.begin(), autosPermitidos.end(),
-                           [&autoPermitido](const Auto &a) { return a.getPlaca() == autoPermitido.getPlaca(); });
+                           [&autoPermitido](const Auto &a)
+                           { return a.getPlaca() == autoPermitido.getPlaca(); });
 
     if (it == autosPermitidos.end())
     {
         autosPermitidos.push_back(autoPermitido);
-        cout << "\nAuto con placa " << autoPermitido.getPlaca() << " registrado.\n";
+        std::string tarjeta = generarTarjetaParqueo();
+        tarjetasParqueo[autoPermitido.getPlaca()] = tarjeta;
+        std::cout << "\nAuto con placa " << autoPermitido.getPlaca()
+                  << " registrado con tarjeta: " << tarjeta << "\n";
     }
     else
     {
-        cerr << "\nEl auto con placa " << autoPermitido.getPlaca() << " ya esta registrado.\n";
+        std::cerr << "\nEl auto con placa " << autoPermitido.getPlaca() << " ya esta registrado.\n";
     }
 }
-
 
 // Eliminar un auto permitido
 void Parqueadero::eliminarAutoPermitido(const std::string &placa)
 {
     auto it = std::find_if(autosPermitidos.begin(), autosPermitidos.end(),
-                           [&placa](const Auto &a) { return a.getPlaca() == placa; });
+                           [&placa](const Auto &a)
+                           { return a.getPlaca() == placa; });
 
     if (it != autosPermitidos.end())
     {
@@ -132,65 +346,61 @@ void Parqueadero::eliminarAutoPermitido(const std::string &placa)
     }
 }
 
-
 // Guardar lista de autos permitidos en archivo
 void Parqueadero::guardarAutosPermitidos(const std::string &rutaArchivo)
 {
-    try
+    std::ofstream archivo(rutaArchivo);
+    if (!archivo)
     {
-        std::ofstream archivo(rutaArchivo);
-        if (!archivo)
-            throw std::runtime_error("\nNo se pudo abrir el archivo para escritura.");
-
-        for (const auto &autoPermitido : autosPermitidos)
-        {
-            archivo << autoPermitido.getPlaca() << " "
-                    << autoPermitido.getMarca() << " "
-                    << autoPermitido.getColor() << '\n';
-        }
-
-        cout << "\nAutos permitidos guardados correctamente en " << rutaArchivo << ".\n";
+        std::cerr << "\nNo se pudo abrir el archivo para escritura.\n";
+        return;
     }
-    catch (const std::exception &e)
+
+    for (const auto &autoPermitido : autosPermitidos)
     {
-        cerr << "\nError al guardar autos permitidos: " << e.what() << '\n';
+        archivo << "  - " << autoPermitido.getPlaca() << " "
+                << autoPermitido.getMarca() << " "
+                << autoPermitido.getColor() << " "
+                << tarjetasParqueo[autoPermitido.getPlaca()] << " "
+                << autoPermitido.getEstado() << '\n';
     }
+    archivo.close();
 }
 
 // Guardar información de propietarios en archivo
-void Parqueadero::guardarPropietarios(const std::string& rutaArchivo) {
+void Parqueadero::guardarPropietarios(const std::string &rutaArchivo)
+{
     std::ofstream archivo(rutaArchivo);
-
-    if (!archivo.is_open()) {
+    if (!archivo)
+    {
         std::cerr << "\nNo se pudo abrir el archivo para guardar propietarios: " << rutaArchivo << std::endl;
         return;
     }
 
-    for (const auto& propietario : propietarios) {
-        // Escribir datos básicos del propietario
+    for (const auto &propietario : propietarios)
+    {
         archivo << propietario.getNombreCompleto() << ","
                 << propietario.getCedula() << ","
                 << propietario.getCorreo() << ","
                 << (propietario.getEsDiscapacitado() ? "1" : "0") << '\n';
 
-        // Escribir autos asociados
-        for (const auto& autoAsociado : propietario.getAutos()) {
-            archivo << "  - " << autoAsociado.getPlaca() << " "
+        for (const auto &autoAsociado : propietario.getAutos())
+        {
+            archivo << "  " << autoAsociado.getPlaca() << " "
                     << autoAsociado.getMarca() << " "
-                    << autoAsociado.getColor() << '\n';
+                    << autoAsociado.getColor() << " "
+                    << tarjetasParqueo[autoAsociado.getPlaca()] << '\n';
         }
     }
-
     archivo.close();
-    std::cout << "\nPropietarios guardados correctamente en " << rutaArchivo << "." << std::endl;
 }
-
 
 void Parqueadero::eliminarPropietario(const std::string &cedula)
 {
     // Buscar al propietario en la lista
     auto it = std::find_if(propietarios.begin(), propietarios.end(),
-                           [&cedula](const Propietario &p) { return p.getCedula() == cedula; });
+                           [&cedula](const Propietario &p)
+                           { return p.getCedula() == cedula; });
 
     if (it != propietarios.end())
     {
@@ -201,7 +411,8 @@ void Parqueadero::eliminarPropietario(const std::string &cedula)
         for (const auto &autoAsociado : autosAsociados)
         {
             auto itAuto = std::find_if(autosPermitidos.begin(), autosPermitidos.end(),
-                                       [&autoAsociado](const Auto &a) { return a.getPlaca() == autoAsociado.getPlaca(); });
+                                       [&autoAsociado](const Auto &a)
+                                       { return a.getPlaca() == autoAsociado.getPlaca(); });
 
             if (itAuto != autosPermitidos.end())
             {
@@ -223,37 +434,65 @@ void Parqueadero::eliminarPropietario(const std::string &cedula)
     }
 }
 
-
-
 // Cargar lista de autos permitidos desde archivo
 void Parqueadero::cargarAutosPermitidos(const std::string &rutaArchivo)
 {
-    try
+    std::ifstream archivo(rutaArchivo);
+    if (!archivo)
     {
-        std::ifstream archivo(rutaArchivo);
-        if (!archivo)
-            throw std::runtime_error("\nNo se pudo abrir el archivo de autos permitidos.");
+        std::cerr << "\nNo se pudo abrir el archivo de autos permitidos.\n";
+        return;
+    }
 
-        std::string placa, marca, color;
-        while (archivo >> placa >> marca >> color)
+    std::string linea;
+    while (getline(archivo, linea))
+    {
+        // Ignorar líneas en blanco
+        if (linea.empty())
+            continue;
+
+        // Eliminar espacios iniciales
+        linea.erase(0, linea.find_first_not_of(' '));
+
+        // Verificar si la línea comienza con un guion
+        if (!linea.empty() && linea[0] == '-')
         {
-            autosPermitidos.emplace_back(placa, marca, color);
-        }
+            // Eliminar el guion y los espacios que lo rodean
+            linea = linea.substr(1);                      // Eliminar el guion
+            linea.erase(0, linea.find_first_not_of(' ')); // Eliminar espacio después del guion
 
-        cout << "\nAutos permitidos cargados correctamente desde " << rutaArchivo << ".\n";
+            // Procesar el contenido de la línea
+            std::istringstream stream(linea);
+            std::string placa, marca, tarjeta, estado;
+
+            stream >> placa >> marca >> tarjeta; // Leer placa, marca y tarjeta
+            getline(stream, estado);             // Leer el resto como estado
+
+            // Quitar espacios iniciales y finales del estado
+            estado.erase(0, estado.find_first_not_of(' '));
+            estado.erase(estado.find_last_not_of(' ') + 1);
+
+            // Si no hay un estado definido, asignar el predeterminado
+            if (estado.empty())
+            {
+                estado = "No se encuentra en el parqueadero";
+            }
+
+            // Almacenar los datos en las estructuras correspondientes
+            autosPermitidos.emplace_back(placa, marca, tarjeta, estado);
+            tarjetasParqueo[placa] = tarjeta;
+        }
     }
-    catch (const std::exception &e)
-    {
-        cerr << "\nError al cargar autos permitidos: " << e.what() << '\n';
-    }
+
+    archivo.close();
 }
 
-
 // Cargar información de propietarios desde archivo
-void Parqueadero::cargarPropietarios(const std::string& rutaArchivo) {
+void Parqueadero::cargarPropietarios(const std::string &rutaArchivo)
+{
     std::ifstream archivo(rutaArchivo);
-
-    if (!archivo.is_open()) {
+    if (!archivo.is_open())
+    {
         std::cerr << "\nNo se pudo abrir el archivo de propietarios: " << rutaArchivo << std::endl;
         return;
     }
@@ -261,12 +500,17 @@ void Parqueadero::cargarPropietarios(const std::string& rutaArchivo) {
     propietarios.clear();
     std::string linea;
 
-    while (getline(archivo, linea)) {
-        // Separar la primera línea del propietario
+    while (getline(archivo, linea))
+    {
+        // Verificar si la línea no está vacía
+        if (linea.empty())
+            continue;
+
         std::istringstream streamPropietario(linea);
         std::string nombreCompleto, cedula, correo;
         bool esDiscapacitado;
 
+        // Leer los datos del propietario
         getline(streamPropietario, nombreCompleto, ',');
         getline(streamPropietario, cedula, ',');
         getline(streamPropietario, correo, ',');
@@ -274,50 +518,99 @@ void Parqueadero::cargarPropietarios(const std::string& rutaArchivo) {
 
         Propietario propietario(nombreCompleto, cedula, correo, esDiscapacitado);
 
-        // Leer autos asociados hasta encontrar la siguiente línea vacía o un nuevo propietario
-        while (getline(archivo, linea) && !linea.empty()) {
-            if (linea[0] == ' ') { // Línea de auto (inicia con espacio para diferenciarla)
-                std::istringstream streamAuto(linea.substr(2)); // Saltar el espacio inicial y guion
-                std::string placa, marca, color;
-                streamAuto >> placa >> marca >> color;
+        // Leer los autos asociados
+        while (getline(archivo, linea))
+        {
+            // Si la línea comienza con un espacio, es un auto asociado
+            if (!linea.empty() && linea[0] == ' ')
+            {
+                // Eliminar el espacio inicial (si tiene dos espacios) y el guion
+                std::string autoInfo = linea.substr(2); // Elimina los dos primeros caracteres (espacio y guion)
+                std::istringstream streamAuto(autoInfo);
 
-                // Validar y corregir si el guion está incluido en la placa
-                if (placa == "-") {
-                    placa = marca;
-                    marca = color;
-                    color = "";
-                    streamAuto >> color;
-                }
+                std::string placa, marca, color, tarjeta, estado;
 
-                Auto autoAsociado(placa, marca, color);
+                // Leer la línea completa del auto
+                streamAuto >> placa >> marca >> color >> tarjeta >> estado;
+
+                // Crear el auto
+                Auto autoAsociado(placa, marca, color, estado);
+
+                // Asociar la tarjeta con la placa
+                tarjetasParqueo[placa] = tarjeta;
+
+                // Agregar el auto al propietario
                 propietario.agregarAuto(autoAsociado);
-            } else {
-                // Si es otra línea de propietario, volver al inicio del loop principal
-                archivo.seekg(-static_cast<int>(linea.size()) - 1, std::ios::cur); // Retrocede la línea
+            }
+            else
+            {
+                // Si encontramos una línea sin espacio, significa que hemos llegado al siguiente propietario
+                archivo.seekg(-static_cast<int>(linea.size()) - 1, std::ios::cur);
                 break;
             }
         }
 
-        // Agregar propietario a la lista
+        // Agregar el propietario a la lista
         propietarios.push_back(propietario);
     }
 
     archivo.close();
-    std::cout << "\nPropietarios cargados correctamente desde " << rutaArchivo << "." << std::endl;
+    std::cout << "\nPropietarios cargados correctamente desde " << rutaArchivo << ".\n";
 }
 
+void Parqueadero::guardarTarjetas(const std::string &rutaArchivo)
+{
+    std::ofstream archivo(rutaArchivo);
+    for (const auto &par : tarjetasParqueo)
+    {
+        archivo << par.first << " " << par.second << "\n";
+    }
+}
 
-const std::vector<Auto>& Parqueadero::getAutosPermitidos() const
+void Parqueadero::cargarTarjetas(const std::string &rutaArchivo)
+{
+    std::ifstream archivo(rutaArchivo);
+    std::string placa, tarjeta;
+    while (archivo >> placa >> tarjeta)
+    {
+        tarjetasParqueo[placa] = tarjeta;
+    }
+}
+
+void Parqueadero::actualizarEstadoAuto(const std::string &placa, const std::string &estado)
+{
+    for (auto &autoPermitido : autosPermitidos)
+    {
+        if (autoPermitido.getPlaca() == placa)
+        {
+            autoPermitido.setEstado(estado);
+            guardarAutosPermitidos("autos.txt"); // Guardar automáticamente al archivo
+            guardarPropietarios("propietarios.txt");
+            std::cout << "\nEstado del auto con placa " << placa << " actualizado a: " << estado << ".\n";
+            return;
+        }
+    }
+    std::cerr << "\nNo se pudo actualizar el estado. Auto con placa " << placa << " no encontrado.\n";
+}
+
+const std::vector<Auto> &Parqueadero::getAutosPermitidos() const
 {
     return autosPermitidos;
 }
 
-const std::vector<Propietario>& Parqueadero::getPropietarios() const {
+const std::vector<Propietario> &Parqueadero::getPropietarios() const
+{
     return propietarios;
 }
 
-void Parqueadero::agregarPropietario(const Propietario &nuevoPropietario) {
+void Parqueadero::agregarPropietario(const Propietario &nuevoPropietario)
+{
     propietarios.push_back(nuevoPropietario);
+}
+
+std::unordered_map<std::string, std::string> &Parqueadero::getTarjetasParqueo()
+{
+    return tarjetasParqueo; // Asumiendo que tienes tarjetasParqueo como un atributo miembro
 }
 
 // g++ main.cpp EspacioParqueadero.cpp Parqueadero.cpp Propietario.cpp Auto.cpp Menu.cpp RegistroHistorial.cpp -o main.exe

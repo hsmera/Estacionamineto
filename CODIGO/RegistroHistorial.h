@@ -15,6 +15,9 @@ public:
 
     void registrarEvento(const std::string& placa, const std::string& accion);
     void mostrarHistorial() const;
+    void mostrarHistorialPorFecha(const std::string& fecha) const;
+    void mostrarHistorialPorPlacaYFecha(const std::string& placa, const std::string& fecha) const;
+
 };
 
 #endif // REGISTRO_HISTORIAL_H

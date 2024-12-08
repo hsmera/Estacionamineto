@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "cppbuild",
-			"label": "Compilar Archivo Actual con g++",
+			"label": "Compilar g++",
 			"command": "C:\\MinGW\\bin\\g++.exe",
 			"args": [
 				"-fdiagnostics-color=always",
@@ -22,9 +22,9 @@
 			"detail": "compiler: C:\\MinGW\\bin\\g++.exe"
 		},
 		{
-			"label": "Compilar y Ejecutar Archivo Actual con g++",
+			"label": "Compilar y Ejecutar g++",
 			"command": "${fileDirname}\\${fileBasenameNoExtension}.exe",
-			"dependsOn": "Compilar Archivo Actual con g++",
+			"dependsOn": "Compilar g++",
 			"problemMatcher": [],
 			"group": {
 				"kind": "build",
